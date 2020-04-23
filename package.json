@@ -1,0 +1,57 @@
+{
+  "name": "todo",
+  "title": "嘟嘟清单",
+  "author": "Apisit Lee",
+  "email": "apisit-lee@outlook.com",
+  "version": "1.0.8",
+  "description": "DUDU todo",
+  "main": "main.js",
+  "build": {
+    "appId": "com.electron.${name}.${version}",
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "./img/logo.ico"
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg"
+      ],
+      "icon": "./img/logo.ico"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 130,
+          "y": 150,
+          "type": "file"
+        }
+      ]
+    },
+    "fileAssociations": [{
+      "ext": "todo",
+      "name": "TODO",
+      "role": "Editor",
+      "icon": "./img/logo.ico"
+    }]
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64",
+    "dist:all": "electron-builder -mwl"
+  },
+  "repository": "",
+  "keywords": ["electron", "todo"],
+  "devDependencies": {
+    "electron": "4.2.12",
+    "electron-builder": "^22.4.1"
+  }
+}

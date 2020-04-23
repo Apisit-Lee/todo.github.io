@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>my todo list</title>
+  <link rel="stylesheet" href="./font/iconfont.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" :class="theme.class">
+    <div class="sidebar" :class="{'sidebar-visible': sidebarVisible, 'animate': sidebarAnimate}">
+      <div class="sidebar-title">
+        {{appTitle}}
+      </div>
+      <div class="sidebar-actions">
+        <div class="action-btn duduIcon dudu-new-file" :title="`新建(${ctrlOrCmd} + N)`" @click="newFile"></div>
+        <div class="action-btn duduIcon dudu-save-as" :title="`保存(${ctrlOrCmd} + S)`" @click="save"></div>
+        <div class="action-btn duduIcon dudu-import" :title="`载入(${ctrlOrCmd} + O)`" @click="load"></div>
+        <div class="action-btn duduIcon dudu-search" :title="`搜索(${ctrlOrCmd} + F)`" @click="showSearchPanel"></div>
+      </div>
+      <div class="sidebar-blocks">
+        <div class="sidebar-block" v-for="(item, i) in list" :key="`sidebar-block-${i}-${item.name}`" :class="{'current': i === listIndex}" @click="onListItemClick(i)" @dblclick="onListItemDblclick" @contextmenu="onListItemContextmenu($event, i)">
+          <span class="duduIcon dudu-menu"></span>
+          <div class="sidebar-block-title" @dblclick="onListItemTitleDblclick" @blur="onListItemTitleSubmit($event, true)" @keydown.enter.prevent="onListItemTitleSubmit($event, true)">{{item.name}}</div>
+          <div class="sidebar-block-del" @click.self.stop="onListItemClickRemove(i)" v-show="false"></div>
+          <div class="sidebar-block-count">{{item.taskList.length}}</div>
+        </div>
+      </div>
+      <div class="sidebar-action" :title="`New list (${ctrlOrCmd} + L)`" @click="addListItem">
+        <span class="duduIcon dudu-plus"></span>
+        New list
+      </div>
+    </div>
+    <div class="main">
+      <div class="head-bar">
+        <div class="title" :class="{'black': detailVisible || searchPanelVisible}">
+          <span v-show="!sidebarVisible">{{headTitle}}</span>
+          <span class="version" v-show="false">v {{version}}</span>
+        </div>
+        <div class="window-ctrl" :class="{'black': detailVisible || searchPanelVisible}">
+          <div class="window-ctrl-btn window-ctrl-btn-fix" :class="{'fixed': windowIsAlwaysOnTop}" :title="windowIsAlwaysOnTop ? '取消置顶' : '置顶'" @click="topenWindow"></div>
+          <div class="window-ctrl-btn window-ctrl-btn-min" title="最小化" @click="minimizeWindow"></div>
+          <div class="window-ctrl-btn window-ctrl-btn-max" :title="windowMaxed ? '还原' : '最大化'" :class="{'maxed': windowMaxed}" @click="maximizeWindow"></div>
+          <div class="window-ctrl-btn window-ctrl-btn-close" title="关闭" @click="closeWindow"></div>
+        </div>
+      </div>
+      <div class="header">
+        <div class="pre-header">
+          <div class="sidebar-toggle" @click="toggleSidebar"></div>
+        </div>
+        <div class="main-title" :key="name" contenteditable="true" @click="onMainListItemTitleClick" @keydown.enter.prevent="onListItemTitleSubmit" @blur="onListItemTitleSubmit">{{name}}</div>
+        <div class="main-action" @click="mainActionPopupVisible = !mainActionPopupVisible">
+          <span class="duduIcon dudu-more"></span>
+          <div class="main-action-popup" v-show="mainActionPopupVisible">
+            <div class="main-action-popup-row">Theme</div>
+            <div class="grid-5">
+              <div class="grid-item" :class="theme.class" v-for="(theme, index) in themes" :key="`theme-${theme.class}-${index}`" :label="theme.label" @click="setTheme(theme)"></div>
+              <!-- <div class="grid-item theme_687ccc"></div>
+              <div class="grid-item theme_ac6bad"></div>
+              <div class="grid-item theme_cc5676"></div>
+              <div class="grid-item theme_d05a56"></div>
+              <div class="grid-item theme_389069"></div>
+              <div class="grid-item theme_358f89"></div>
+              <div class="grid-item theme_73818c"></div>
+              <div class="grid-item theme_dfedf9"></div>
+              <div class="grid-item theme_f2e7f9"></div>
+              <div class="grid-item theme_"></div>
+              <div class="grid-item theme_"></div>
+              <div class="grid-item theme_"></div> -->
+            </div>
+            <div class="main-action-popup-row" @click="toggleDoneTasks(!doneTasksVisible)">{{doneTasksVisible ? '隐藏' : '显示'}}已完成任务</div>
+
+          </div>
+        </div>
+      </div>
+      <div class="main-list" @click.self="onListWrapperClick">
+        <div class="main-list-item" :class="{'checked': item.status === 1}" v-for="(item, i) in taskList" :key="`item-${i}`" v-show="doneTasksVisible || item.status !== 1" @click="onTaskClick(listIndex, i)" @contextmenu="onTaskContextmenu($event, listIndex, i)">
+          <div class="radio" @click.stop="setTaskStatus({index: i, status: Math.abs(item.status - 1)})"></div>
+          <div class="title">{{item.title}}</div>
+        </div>
+      </div>
+      <form class="input-bar" action="javascript: void(0);" @submit="onTaskInpSubmit">
+        <input ref="inp" type="text" :placeholder="`Add a task (${ctrlOrCmd} + T)`">
+      </form>
+      <div class="search-panel" v-show="searchPanelVisible">
+        <div class="search-header">
+          <div class="sidebar-toggle" @click="toggleSidebar"></div>
+          <div class="title-bar">
+            <div class="search-title">Search</div>
+          <div class="close-search" @click="hideSearchPanel">Close Search</div>
+          </div>
+          <div class="search-bar">
+            <input ref="searchInp" type="text" class="search-input" v-model="searchStr" placeholder="Search list or task" @keyup.enter="search"/>
+          </div>
+        </div>
+        <div class="search-results" v-if="searchList && searchList.length">
+          <div class="search-list-item" :class="{'checked': item.task.status === 1}" v-for="item in searchList" :key="`item-${item.itemIndex}-${item.taskIndex}`" @click="onTaskClick(item.itemIndex, item.taskIndex)" @contextmenu="onTaskContextmenu($event, item.itemIndex, item.taskIndex)">
+            <div class="radio" @click.stop="setTaskStatus({index: item.taskIndex, status: Math.abs(item.task.status - 1)})"></div>
+            <div class="title">{{item.task.title}}</div>
+          </div>
+        </div>
+        <div class="search-blank" v-else>
+          What would you like to find? You can search within lists, tasks and notes.
+        </div>
+      </div>
+    </div>
+    <div class="mask" v-show="maskVisible" @click="onMaskClick"></div>
+    <div class="right-sidebar" :key="taskTimestamp" :class="{'right-sidebar-visible': detailVisible, 'animate': sidebarAnimate}">
+      <div class="task-info" :class="{'checked': taskStatus === 1}">
+        <div class="task-info-header"></div>
+        <div class="task-info-body">
+          <div class="task-info-row">
+            <div class="radio" @click.stop="setTaskStatus({index: taskIndex, status: Math.abs(taskStatus - 1) })"></div>
+            <div class="title" contenteditable="true" @keydown.enter.prevent="onTaskTitleSubmit" @blur="onTaskTitleSubmit">{{taskTitle}}</div>
+          </div>
+          <div class="task-info-row">
+            <div class="content" contenteditable="true" @blur="onTaskContentSubmit" v-html="taskContent"></div>
+          </div>
+        </div>
+        <div class="task-info-bottom">
+          <div class="close" @click="hideDetail" title="Dismiss detail view"></div>
+          <div class="time"><span v-show="taskTimestamp">Created：{{taskTimestamp | time}}</span></div>
+          <div class="del" @click.stop="onTaskClickRemove(listIndex, taskIndex)" title="Delete task"></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="footer-item footer-item-thumb">
+        <span>{{currentFile || 'temp file'}}</span>
+        <span v-show="listIndex > -1"> &gt; {{name}}</span>
+        <span v-show="taskIndex > -1"> &gt; {{taskTitle}}</span>
+      </div>
+      <div class="footer-item footer-item-list-count">清单数：{{list.length}}</div>
+    </div>
+    <div class="notice-tip" :class="{'unfold': noticeUnfold}" v-if="notice">
+      <div :class="`notice-type ${notice.type}`"></div>
+      <div class="notice-body" @click="toggleNoticeFold">
+        <div class="title">{{notice.title}}</div>
+        <div class="desc">{{notice.desc}}</div>
+      </div>
+      <div class="notice-action">
+        <div class="notice-close" @click="notice = null">Close</div>
+      </div>
+    </div>
+  </div>
+  <script src="./js/vue.min.js"></script>
+  <script src="./js/vuex.min.js"></script>
+  <script src="./renderer.js"></script>
+</body>
+</html>
