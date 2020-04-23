@@ -52,6 +52,7 @@
   "keywords": ["electron", "todo"],
   "devDependencies": {
     "electron": "4.2.12",
-    "electron-builder": "^22.4.1"
+    "electron-builder": "^22.4.1",
+    "minimist": ">=1.2.3"
   }
 }
