@@ -51,7 +51,7 @@
   "repository": "",
   "keywords": ["electron", "todo"],
   "devDependencies": {
-    "electron": "4.2.12",
+    "electron": "13.6.6",
     "electron-builder": "^22.4.1",
     "minimist": ">=1.2.3"
   }
